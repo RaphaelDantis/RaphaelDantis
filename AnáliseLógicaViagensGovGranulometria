@@ -1,1 +1,48 @@
+#Redução de glanurometria dos dados das viagens do governo e análise lógica das informações.
 
+
+SELECT
+
+# ano, mes, destino
+
+
+
+            FORMAT_DATE ('%Y-%m', V.Per__odo___Data_de_in__cio)                                  AS MES_ANO_VIAGEM_INICIO
+            ,COUNT(DISTINCT PS.N__mero_da_Proposta__PCDP_)                                       as NUMERO_DE_VIAGENS_DISTINTAS
+            ,COUNT( PS.N__mero_da_Proposta__PCDP_ )                                              as NUMERO_TOTAL_DE_VIAGEM    
+            ,AVG (V.Valor_di__rias)                                                              as CUSTO_DIARIAS
+            ,AVG (V.Valor_outros_gastos)                                                         as CUSTOS_DEMAIS_GASTOS   
+            ,AVG (P.Valor)                                                                       as CUSTO_PASSAGEM
+            ,T.Destino___Cidade                                                                  as CIDADE_DESTINO
+            ,COUNT(DISTINCT T.Meio_de_transporte)                                                as MEIO_TRANSPORTE
+            ,AVG_P.VALOR_MEDIO_PASSAGEM                                                          as MEDIA_PASSAGEM
+            ,min(Valor_da_passagem)                                                              as MENOR_VALOR_PASSAGEM
+            ,max(Valor_da_passagem)                                                              as MAIOR_VALOR_PASSAGEM  
+
+
+       
+        from  `infosgov.Viagens`                                                               as V
+    left join `infosgov.pagamentos`                                                            as P
+        on V.Identificador_do_processo_de_viagem = P.Identificador_do_processo_de_viagem
+    left join `infosgov.Trechos`                                                               as T 
+        on P.Identificador_do_processo_de_viagem = T.Identificador_do_processo_de_viagem_
+    left join `infosgov.passagens`                                                             as PS
+        on T.Identificador_do_processo_de_viagem_= PS.Identificador_do_processo_de_viagem
+    left join (
+                        SELECT 
+
+                        FORMAT_DATE ('%Y-%m', Data_da_emiss__o_compra)                                        AS ANO_MES
+                        ,ROUND(AVG(Valor_da_passagem) , 2)                                                    AS VALOR_MEDIO_PASSAGEM
+                        ,Cidade___Destino_ida                                                                 AS CIDADE_DESTINO
+
+                    
+                        FROM `infosgov.passagens`
+                    WHERE Cidade___Destino_ida Like any ('São Paulo', 'Belo Horizonte')
+                    and FORMAT_DATE ('%Y-%m', Data_da_emiss__o_compra)  is not null
+                    Group by FORMAT_DATE ('%Y-%m', Data_da_emiss__o_compra)
+                            ,Cidade___Destino_ida
+              ) AVG_P
+            on FORMAT_DATE ('%Y-%m', Per__odo___Data_de_in__cio) = AVG_P.ANO_MES
+            and T.Destino___Cidade = AVG_P.CIDADE_DESTINO
+        Where T.Destino___Cidade in ('São Paulo', 'Belo Horizonte') 
+        Group by FORMAT_DATE ('%Y-%m', V.Per__odo___Data_de_in__cio), T.Destino___Cidade, AVG_P.VALOR_MEDIO_PASSAGEM
