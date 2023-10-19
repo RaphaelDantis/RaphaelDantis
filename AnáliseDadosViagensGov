@@ -1,0 +1,139 @@
+# Está instrução trata das informações presentes no banco de dados público de viagens do Governo.
+
+
+SELECT
+
+
+            FORMAT_DATE ('%Y-%m', Per__odo___Data_de_in__cio)                                   AS MES_ANO_VIAGEM_INICIO
+            ,V.Identificador_do_processo_de_viagem                                               as Identificador_Viagem
+            ,V.Per__odo___Data_de_in__cio                                                        as Data_Inicio_Viagem
+            ,V.Per__odo___Data_de_fim                                                            as Data_Fim_Viajem
+            ,V.Valor_di__rias                                                                    as Custo_Diarias
+            ,V.Valor_outros_gastos                                                               as Custo_Demais_Gastos   
+            ,P.Valor                                                                             as Custo_Passagem
+            ,P.Nome_da_unidade_gestora_pagadora                                                  as Gestao_Pagadora
+            ,P.Nome_da_unidade_gestora_pagadora                                                  as Unidade_Pagadora
+            ,P.Tipo_de_pagamento                                                                 as Tipo_de_Pagamento 
+            ,T.Origem___Cidade                                                                   as Cidade_Origem
+            ,T.Destino___Pa__s                                                                   as Pais_Destino
+            ,T.Destino___Cidade                                                                  as Cidade_Destino
+            ,T.Origem___UF                                                                       as Estado_Origem
+            ,T.N__mero_da_Proposta__PCDP_                                                        as Codigo_Viagem_Proposta
+            ,T.Meio_de_transporte                                                                as Veiculo_Utilizado
+            ,PS.Meio_de_transporte                                                               as Servico_Utilizado_Transporte
+            ,PS.Valor_da_passagem                                                                as Valor_da_Passagem
+            ,AVG_P.VALOR_MEDIO_PASSAGEM                                             
+            ,FORMAT_DATE ('%Y-%m',Data_da_emiss__o_compra)                                        as MES_ANO 
+            ,COUNT(DISTINCT N__mero_da_Proposta__PCDP_)                                          as NUMERO_DE_VIAGENS_DISTINTAS
+            ,COUNT( N__mero_da_Proposta__PCDP_ )                                                 as NUMERO_TOTAL_DE_VIAGEM    
+            ,round(avg(Valor_da_passagem),2)                                                     as Media_passagem
+            ,min(Valor_da_passagem)                                                              as Menor_valor_passagem
+            ,max(Valor_da_passagem)  
+
+
+        ,datetime_diff(Per__odo___Data_de_fim,Per__odo___Data_de_in__cio, day)                 as Tempo_de_viagem_dias
+        ,case 
+            when Origem___UF = "Alagoas" then "Nordeste"
+            when Origem___UF = "Sergipe" then "Nordeste"
+            when Origem___UF = "Rio Grande do Norte" then "Nordeste"
+            when Origem___UF = "Piauí" then "Nordeste"
+            when Origem___UF = "Pernambuco" then "Nordeste"
+            when Origem___UF = "Paraíba" then "Nordeste"
+            when Origem___UF = "Maranhão" then "Nordeste"
+            when Origem___UF = "Bahia" then "Nordeste"
+            when Origem___UF = "Ceará"then "Nordeste"
+            when Origem___UF = "Amazonas" then "Norte"
+            when Origem___UF = "Pará" then "Norte"
+            when Origem___UF = "Acre" then "Norte"
+            when Origem___UF = "Roraima" then "Norte"
+            when Origem___UF = "Rondônia" then "Norte"
+            when Origem___UF = "Amapá" then "Norte"
+            when Origem___UF = "Tocantins" then "Norte"
+            when Origem___UF = "Goiás" then "Centro Oeste"
+            when Origem___UF = "Mato Grosso" Then  "Centro Oeste"
+            when Origem___UF = "Mato Grosso do Sul" Then "Centro Oeste"
+            when Origem___UF = "Distrito Federal" Then "Centro Oeste"
+            when Origem___UF = "Minas Gerais" Then "Sudeste"
+            when Origem___UF = "Espírito Santo" Then "Sudeste"
+            when Origem___UF = "Rio de Janeiro" Then "Sudeste"
+            when Origem___UF = "São Paulo" Then "Sudeste"
+            when Origem___UF = "Paraná" Then "Sul"
+            when Origem___UF = "Santa Catarina" Then "Sul"
+            when Origem___UF = "Rio Grande do Sul" Then "Sul"
+            else "Internacional"
+            end Regiao
+        ,case
+            when Valor between 0 and 200000 then "Baixo Custo"
+            when Valor between 200001 and 5000000 then "Médio Custo"
+            when Valor > 5000001 then "Alto Custo"
+            else "Valor indeterminado"
+            end Custos
+
+       
+        from  `infosgov.Viagens`                                                               as V
+    left join `infosgov.pagamentos`                                                            as P
+        on V.Identificador_do_processo_de_viagem = P.Identificador_do_processo_de_viagem
+    left join `infosgov.Trechos`                                                               as T 
+        on P.Identificador_do_processo_de_viagem = T.Identificador_do_processo_de_viagem_
+    left join `infosgov.passagens`                                                             as PS
+        on T.Identificador_do_processo_de_viagem_= PS.Identificador_do_processo_de_viagem
+    left join (
+                        SELECT 
+
+                        FORMAT_DATE ('%Y-%m', Data_da_emiss__o_compra)                                        AS ANO_MES
+                        ,ROUND(AVG(Valor_da_passagem) , 2)                                                    AS VALOR_MEDIO_PASSAGEM
+                        ,Cidade___Destino_ida                                                                 AS CIDADE_DESTINO
+
+                    
+                        FROM `infosgov.passagens`
+                    WHERE Cidade___Destino_ida Like any ('São Paulo', 'Belo Horizonte')
+                    and FORMAT_DATE ('%Y-%m', Data_da_emiss__o_compra)  is not null
+                    Group by FORMAT_DATE ('%Y-%m', Data_da_emiss__o_compra)
+                            ,Cidade___Destino_ida
+              ) AVG_P
+            on FORMAT_DATE ('%Y-%m', Per__odo___Data_de_in__cio) = AVG_P.ANO_MES
+            and T.Destino___Cidade = AVG_P.CIDADE_DESTINO
+      
+        
+
+SELECT 
+
+
+    FORMAT_DATE ('%Y-%m',Data_da_emiss__o_compra)                                               as MES_ANO 
+    ,COUNT(DISTINCT Identificador_do_processo_de_viagem)                                        as NUMERO_DE_VIAGENS_DISTINTAS
+    ,COUNT(Identificador_do_processo_de_viagem)                                                 as NUMERO_TOTAL_DE_VIAGEM    
+    ,round(avg(Valor_da_passagem),2)                                                            as Media_passagem
+    ,min(Valor_da_passagem)                                                                     as Menor_valor_passagem
+    ,max(Valor_da_passagem)                                                                     as Maior_valor_passagem
+
+    from `infosgov.passagens` IP
+    LEFT JOIN `infosgov.Viagens` IV
+    WHERE RIGHT (Destinos, 2) Like Any (SP)
+    group by Data_da_emiss__o_compra;
+
+ 
+SELECT 
+
+    COUNT(DISTINCT N__mero_da_Proposta__PCDP_ || Identificador_do_processo_de_viagem)
+    ,COUNT (N__mero_da_Proposta__PCDP_ || Identificador_do_processo_de_viagem)
+    FROM `infosgov.passagens`;
+
+SELECT 
+
+        FORMAT_DATE ('%Y-%m', Data_da_emiss__o_compra)                                        AS ANO_MES
+        ,ROUND(AVG(Valor_da_passagem) , 2)                                                    AS VALOR_MEDIO_PASSAGEM
+        ,Cidade___Destino_ida                                                                 AS CIDADE_DESTINO
+
+    
+    FROM `infosgov.passagens`
+    WHERE Cidade___Destino_ida Like any ('São Paulo', 'Belo Horizonte')
+      and FORMAT_DATE ('%Y-%m', Data_da_emiss__o_compra)  is not null
+    Group by FORMAT_DATE ('%Y-%m', Data_da_emiss__o_compra)
+             ,Cidade___Destino_ida;
+
+SELECT    
+
+    COUNT(DISTINCT Identificador_do_processo_de_viagem || Data_da_emiss__o_compra || N__mero_da_Proposta__PCDP_)                                         as NUMERO_DE_VIAGENS_DISTINTAS
+    ,COUNT(Identificador_do_processo_de_viagem || Data_da_emiss__o_compra || N__mero_da_Proposta__PCDP_ )                                                 as NUMERO_TOTAL_DE_VIAGEM 
+    
+    from `infosgov.passagens`
