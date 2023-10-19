@@ -1,4 +1,8 @@
-      SELECT 
+#Este código foi uma análise para criação de uma tabela com as informações relevantes para KPI's do setor de vendas e logística.
+#Foi um dos primeiros códigos que realizei.
+
+
+SELECT 
             
                  EU.id                                                        as Usuario
                 ,OI.status
