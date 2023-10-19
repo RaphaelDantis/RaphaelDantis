@@ -1,0 +1,36 @@
+      SELECT 
+            
+                 EU.id                                                        as Usuario
+                ,OI.status
+                ,OI.created_at 
+                ,OI.delivered_at
+                ,OI.shipped_at
+                ,II.product_id
+                ,P.name
+                ,P.distribution_center_id
+                ,P.retail_price 
+                ,P.cost 
+                ,EU.country
+                ,EU.city
+                ,DC.name                                                      as nome_centro
+                ,DC.latitude
+                ,DC.longitude
+                ,O.num_of_item
+                ,round ((retail_price),2)                                     as preco
+                ,round ((cost),2)                                             as custo
+                ,format_date('%Y-%m',OI.created_at)                           as Data_criacao 
+                ,format_date('%Y-%m',OI.delivered_at)                         as Data_recebido
+                ,format_date('%Y-%m',OI.shipped_at)                           as Data_envio      
+         from `bigquery-public-data.thelook_ecommerce.users`                  as EU
+    left join `bigquery-public-data.thelook_ecommerce.order_items`            as OI
+         on EU.id = OI.id
+    left join (SELECT distinct product_id 
+               from `bigquery-public-data.thelook_ecommerce.inventory_items`) as II
+          on OI.product_id = II.product_id
+    left join `bigquery-public-data.thelook_ecommerce.products`               as P
+          on II.product_id = P.id
+    left join `bigquery-public-data.thelook_ecommerce.distribution_centers`   as DC
+          on P.distribution_center_id = DC.id
+    left join `bigquery-public-data.thelook_ecommerce.orders`                 as O
+          on OI.user_id = O.user_id 
+        where OI.status is not null;
