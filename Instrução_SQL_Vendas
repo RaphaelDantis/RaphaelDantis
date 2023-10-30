@@ -1,0 +1,60 @@
+*Instrução SQL para análise e tratamento de dados fictícios referente a um setor de vendas*
+
+SELECT
+
+            DATA_VENDA                                                                                                                                AS DATA_VENDA
+            ,CANAL_VENDAS
+            ,REGIAO
+            ,FORMA_PAGAMENTO 
+            ,SUM (QTD_PRODUTOS_VENDIDOS)                                                                                                              AS QTD_PRODUTOS_VENDIDOS
+            ,SUM (PRECO)                                                                                                                              AS PRECO
+            ,SUM (TOTAL_PRECO)                                                                                                                        AS TOTAL_PRECO
+            ,SUM (QTD_CAMPANHA)                                                                                                                       AS QTD_CAMPANHA 
+            ,SUM (SOMA_QTD_ENVIOS)                                                                                                                    AS SOMA_QTD_ENVIOS
+            ,SUM (QTD_ABERTURA)                                                                                                                       AS QTD_ABERTURA
+            ,SUM (QTD_CLIQUES)                                                                                                                        AS QTD_CLIQUES
+            ,SUM (QTD_ADESAO)                                                                                                                         AS QTD_ADESAO
+            ,IF (FORMAT_DATE("%m", DATA_VENDA) IN ('01','02','03','04','05','06'), SUM(QTD_PRODUTOS_VENDIDOS), NULL)                                  AS QTD_PRIMEIRO_SEMESTRE
+            ,IF (FORMAT_DATE("%m", DATA_VENDA) IN ('07','08','09','10','11','12'), SUM(QTD_PRODUTOS_VENDIDOS), NULL)                                  AS QTD_SEGUNDO_SEMESTRE
+            ,IF (FORMAT_DATE("%m", DATA_VENDA) IN ('01','02','03','04','05','06'), SUM(PRECO), NULL)                                                  AS PRECO_PRIMEIRO_SEMESTRE
+            ,IF (FORMAT_DATE("%m", DATA_VENDA) IN ('07','08','09','10','11','12'), SUM(PRECO), NULL)                                                  AS PRECO_SEGUNDO_SEMESTRE
+            ,IF (FORMAT_DATE("%m", DATA_VENDA) = (FORMAT_DATE("%m", CURRENT_DATE())), SUM(QTD_PRODUTOS_VENDIDOS), NULL)                               AS QTD_PROD_MES_ATUAL
+            ,IF (FORMAT_DATE("%m", DATA_VENDA) = FORMAT_DATE("%m",DATE_ADD(CURRENT_DATE(), INTERVAL -1 MONTH)), SUM(QTD_PRODUTOS_VENDIDOS), NULL)     AS QTD_PROD_MES_ANTERIOR
+            ,IF (FORMAT_DATE("%m", DATA_VENDA) = (FORMAT_DATE("%m", CURRENT_DATE())), SUM(PRECO), NULL)                                               AS PRECO_MES_ATUAL
+            ,IF (FORMAT_DATE("%m", DATA_VENDA) = FORMAT_DATE("%m",DATE_ADD(CURRENT_DATE(), INTERVAL -1 MONTH)), SUM(PRECO), NULL)                     AS PRECO_MES_ANTERIOR     
+      FROM (                  
+            SELECT 
+
+ 
+                  AV.Data_Venda                                                                                                                       AS DATA_VENDA
+                  ,AV.Canal_Venda                                                                                                                     AS CANAL_VENDAS
+                  ,AV.Regiao                                                                                                                          AS REGIAO
+                  ,AV.Forma_Pagamento                                                                                                                 AS FORMA_PAGAMENTO
+                  ,IF(ROUND(AV.Quantidade/10,0) < 1,1, ROUND(AV.Quantidade/10,0))                                                                     AS QTD_PRODUTOS_VENDIDOS
+                  ,IF(ROUND(AV.Preco_Unitario/5,0) <1,1, ROUND(AV.Preco_Unitario/5,0))                                                                AS PRECO
+                  ,AV.Total                                                                                                                           AS TOTAL_PRECO
+                  ,CAMP.QTD_CAMPANHA
+                  ,CAMP.SOMA_QTD_ENVIOS
+                  ,CAMP.QTD_ABERTURA
+                  ,CAMP.QTD_CLIQUES
+                  ,CAMP.QTD_ADESAO               
+
+                  FROM `tonal-works-393316.Vendas.Analise_vendas`                                                                                     AS AV
+                  LEFT JOIN 
+                  (
+                        SELECT data
+                              ,COUNT (DISTINCT ID_Campanha)                                                                                           AS QTD_CAMPANHA
+                              ,SUM (Quantidade_de_Envios)                                                                                             AS SOMA_QTD_ENVIOS
+                              ,SUM (Quantidade_de_Abertura)                                                                                           AS QTD_ABERTURA
+                              ,SUM  (Quantidade_de_Cliques)                                                                                           AS QTD_CLIQUES
+                              ,SUM  (Quantidade_de_Ades__o)                                                                                           AS QTD_ADESAO                
+                              FROM `tonal-works-393316.Vendas.Campanha` 
+                              GROUP BY Data                            
+                  ) AS CAMP     
+                  ON AV.Data_Venda = CAMP.data
+      ) AS AUX 
+      GROUP BY  FORMAT_DATE('%Y%m%d',DATA_VENDA)
+               ,CANAL_VENDAS
+               ,REGIAO
+               ,FORMA_PAGAMENTO
+               ,DATA_VENDA
